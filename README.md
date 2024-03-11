@@ -4,7 +4,7 @@
 ![Generic badge](https://img.shields.io/badge/WMS-snakemake-blue.svg)
 <!-- badges: end -->
 
-Examine transcript variety of gene of interest in ENCODE long-read RNA sequencing data
+Examine transcript variety of genes of interest in ENCODE long-read RNA sequencing data
 
 
 ## Installation
