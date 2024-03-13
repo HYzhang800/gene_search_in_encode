@@ -1,0 +1,73 @@
+Biosample.term.name,organ,organ_new
+adrenal gland,adrenal_gland,adrenal gland
+aorta,blood_vessel,blood_vessel
+posterior vena cava,blood_vessel,blood_vessel
+endothelial cell of umbilical vein,blood_vessel,blood_vessel
+astrocyte,brain,brain
+dorsolateral prefrontal cortex,brain,brain
+middle frontal area 46,brain,brain
+left colon,colon,colon
+mucosa of descending colon,colon,colon
+HCT116,colon,cell line
+Caco-2,colon,cell line
+WTC11,connective_tissue,cell line
+chondrocyte,connective_tissue,cell line
+osteocyte,connective_tissue,cell line
+IMR-90,connective_tissue,cell line
+mesenteric fat pad,connective_tissue,connective_tissue
+HFFc6,connective_tissue,cell line
+endodermal cell,embryo,cell line
+H1,embryo,cell line
+H9,embryo,cell line
+neural crest cell,embryo,cell line
+adrenal gland,endocrine_gland,endocrine_gland
+progenitor cell of endocrine pancreas,endocrine_gland,endocrine_gland
+type B pancreatic cell,endocrine_gland,endocrine_gland
+HepG2,endocrine_gland,cell line
+right lobe of liver,endocrine_gland,endocrine_gland
+mammary epithelial cell,epithelium,epithelium
+type B pancreatic cell,epithelium,epithelium
+endothelial cell of umbilical vein,epithelium,epithelium
+endothelial cell,epithelium,epithelium
+MCF-7,epithelium,cell line
+MCF 10A,epithelium,cell line
+HepG2,epithelium,cell line
+HCT116,epithelium,cell line
+Panc1,epithelium,cell line
+MCF-7,exocrine_gland,cell line
+MCF 10A,exocrine_gland,cell line
+HepG2,exocrine_gland,cell line
+mammary epithelial cell,exocrine_gland,exocrine gland
+right lobe of liver,exocrine_gland,exocrine gland
+ovary,gonad,gonad
+Right ventricle myocardium superior,heart,heart
+cardiac septum,heart,heart
+right cardiac atrium,heart,heart
+left ventricle myocardium superior,heart,heart
+heart right ventricle,heart,heart
+heart left ventricle,heart,heart
+left ventricle myocardium inferior,heart,heart
+Right ventricle myocardium inferior,heart,heart
+left cardiac atrium,heart,heart
+left colon,intestine,intestine
+mucosa of descending colon,intestine,intestine
+HCT116,intestine,cell line
+Caco-2,intestine,cell line
+OCI-LY7,blood,cell line
+GM12878,blood,cell line
+K562,blood,cell line
+HL-60,blood,blood
+lower lobe of right lung,lung,lung
+upper lobe of right lung,lung,lung
+lower lobe of left lung,lung,lung
+left lung,lung,cell line
+PC9,lung,cell line
+IMR-90,lung,cell line
+right lobe of liver,liver,liver
+HepG2,liver,cell line
+WTC11,skin,cell line
+GM23338,skin,cell line
+ovary,ovary,ovary
+progenitor cell of endocrine pancreas,pancreas,pancreas
+type B pancreatic cell,pancreas,pancreas
+Panc1,pancreas,cell line
