@@ -121,15 +121,14 @@ rule data_process:
         #orf_usage = "Results/orf_usage_sum.csv"
         trans_info = expand("Results/transcript_usage_{gene}.csv", gene = genes)
     params:
-        script = "/mnt/c/Users/Haoyu/Desktop/scripts/gene_test_ENCODE.R",
-        #script = SNAKEDIR + "/scripts/gene_test_ENCODE.R",
+        #script = "/mnt/c/Users/Haoyu/Desktop/scripts/gene_test_ENCODE.R",
+        script = SNAKEDIR + "/scripts/gene_test_ENCODE.R",
         metadata = config["metadata"],
         quanti_file_path = config["quanti_file_path"],
         reference_genome = config["reference_genome"],
         reference_annotation = config["reference_annotation"],
-        organ_info = "/mnt/e/Encode_annotation/all/organ_info_full.csv",
-
-        #organ_info = SNAKEDIR + "/Data/organ_info_full.csv"
+        #organ_info = "/mnt/e/Encode_annotation/all/organ_info_full.csv",
+        organ_info = SNAKEDIR + "/Data/organ_info_full.csv",
         workdir = config["workdir"]
     log: "Results/Rlog/Rlog.log"
     shell:
