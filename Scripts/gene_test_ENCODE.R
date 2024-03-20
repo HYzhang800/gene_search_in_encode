@@ -1,7 +1,3 @@
-######include a loop for each gene
-#### if a gene is completely not detected in any gtf files, end the loop immediately
-
-
 args <- commandArgs(TRUE)
 
 defaultW <- getOption("warn")
@@ -183,6 +179,14 @@ overlapping_trans <- subsetByOverlaps(gtf_transcripts, gene_region, minoverlap =
 
 overlapping_trans <- overlapping_trans$transcript_id
 
+# If no transcripts detected for this gene, move to the next gene 
+if(length(overlapping_trans)){
+  
+  next
+}
+
+
+  
 # keep unique 'exons'
 gtf <- gtf_for_all_genes %>% filter(type == "exon") %>%
   filter(transcript_id %in% overlapping_trans) %>%
