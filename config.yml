@@ -1,21 +1,28 @@
-#working directory
-#workdir: "/mnt/f/Data/Encode_annotation/all/encode_raw"
-workdir: "/mnt/c/Users/Haoyu/Desktop/snake_test"
-#gtf_dir: "/mnt/f/Data/Encode_annotation/all/encode_raw"
-gtf_dir: "/mnt/c/Users/Haoyu/Desktop/snake_test"
-target_genes: "/mnt/c/Users/Haoyu/Desktop/test_gene_list.txt"
+# working directory 
+workdir: ""
+
+# The directory storing ENCODE annotation files
+gtf_dir: ""
+
+# The file with names of genes of interest
+target_genes: ""
 
 
+#reference GENCODE annotation
+reference_annotation: ""
 
-reference_annotation: "/mnt/e/reference_for_APTARS/gencode.v29.short.gtf"
+# reference genome hg38.fa
+reference_genome: ""
 
-reference_genome: "/mnt/e/reference_for_APTARS/hg38.fa"
-metadata: "/mnt/e/Encode_tsv/Metadata/lung.tsv"
-quanti_file_path: "/mnt/e/Encode_tsv/all"
+# Metadata from ENCODE, with experimental accessions and file names
+metadata: ""
+
+# Directory stores quantification tsv files from ENCODE
+quanti_file_path: ""
 
 
 
 # threads
-threads: 1
+threads: 4
 
 
