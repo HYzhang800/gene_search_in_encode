@@ -6,7 +6,7 @@ import polars as pl
 from gtfparse import read_gtf
 import glob
 
-
+SNAKEDIR = path.dirname(workflow.snakefile)
 encode_dir = config['gtf_dir']
 
 files = os.listdir(encode_dir)
