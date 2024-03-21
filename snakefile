@@ -129,7 +129,7 @@ rule data_process:
         trans_info = expand("Results/transcript_usage_{gene}.csv", gene = genes)
     params:
         #script = "/mnt/c/Users/Haoyu/Desktop/scripts/gene_test_ENCODE.R",
-        script = SNAKEDIR + "/scripts/gene_test_ENCODE.R",
+        script = SNAKEDIR + "/Scripts/gene_test_ENCODE.R",
         metadata = config["metadata"],
         quanti_file_path = config["quanti_file_path"],
         reference_genome = config["reference_genome"],
