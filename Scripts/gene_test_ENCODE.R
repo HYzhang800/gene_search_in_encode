@@ -170,11 +170,13 @@ gene_region <- GRanges(
 ## If target gene is an overlapping locus (with another gene), only reads fully contained in the locus will be kept
 ## Otherwise, all reads with at least 50 bps overlapping will be kept
 
-if(processing_gene_info$tag == "overlapping_locus"){
+if(is.na(processing_gene_info$tag)){
+  overlapping_trans <- subsetByOverlaps(gtf_transcripts, gene_region, minoverlap = 50) 
 
-overlapping_trans <- subsetByOverlaps(gtf_transcripts, gene_region, type = "within")
-}else{
-overlapping_trans <- subsetByOverlaps(gtf_transcripts, gene_region, minoverlap = 50) 
+}else if(processing_gene_info$tag == "overlapping_locus"){
+  overlapping_trans <- subsetByOverlaps(gtf_transcripts, gene_region, type = "within")
+} else{
+  overlapping_trans <- subsetByOverlaps(gtf_transcripts, gene_region, minoverlap = 50)
 }
 
 overlapping_trans <- overlapping_trans$transcript_id
