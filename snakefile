@@ -8,11 +8,17 @@ from os import path
 import glob
 
 SNAKEDIR = path.dirname(workflow.snakefile)
+
+
 encode_dir = config['gtf_dir']
+
+if not encode_dir.endswith("/"):
+    encode_dir += "/"
 
 files = os.listdir(encode_dir)
 
-encode_array = [file for file in files if file.endswith(".gtf")]
+#encode_array = [file for file in files if file.endswith(".gtf")]
+encode_array = [os.path.join(encode_dir, file) for file in files if file.endswith(".gtf")]
 
 print("Files to be processed:", encode_array)
 
