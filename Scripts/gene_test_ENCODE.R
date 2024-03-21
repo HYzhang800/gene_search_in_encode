@@ -179,10 +179,10 @@ if(is.na(processing_gene_info$tag)){
   overlapping_trans <- subsetByOverlaps(gtf_transcripts, gene_region, minoverlap = 50)
 }
 
-overlapping_trans <- overlapping_trans$transcript_id
+overlapping_trans <- unique(overlapping_trans$transcript_id)
 
 # If no transcripts detected for this gene, move to the next gene 
-if(length(overlapping_trans)){
+if(length(overlapping_trans) == 0){
   
   next
 }
