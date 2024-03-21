@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import polars as pl
 from gtfparse import read_gtf
+from os import path
 import glob
 
 SNAKEDIR = path.dirname(workflow.snakefile)
