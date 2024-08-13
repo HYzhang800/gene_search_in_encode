@@ -1486,9 +1486,15 @@ existing_organ <- unique(existing_organ$organ)
 orf_organ <- list()
 
 for (i in 1:length(existing_organ)) {
+  print(paste("Iteration:", i))
   tissues <- quanti_tissue %>% filter(organ == existing_organ[i])
+  if(nrow(tissues) == 0){
+    next()
+  }
   df <- quanti_organ %>% dplyr::filter(tissue %in% tissues$Biosample.term.name)
-  df$organ <- organs[i]
+  df$organ <- existing_organ[i]  
+  #add organ names used in existing_organ from the new organ_info,
+  #not old organ definitions from metadata_tsv (vector 'organs')
   orf_organ[[i]] <- df
 }
 
