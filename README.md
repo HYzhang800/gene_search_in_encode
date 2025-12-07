@@ -4,7 +4,11 @@
 ![Generic badge](https://img.shields.io/badge/WMS-snakemake-blue.svg)
 <!-- badges: end -->
 
-Examine transcript variety of genes of interest in ENCODE long-read RNA sequencing data
+Investigate transcript complexity of genes of interest using ENCODE long-read RNA sequencing data.
+Generate summary tables and plots of:
+1) top transcript summary of occurrence, structure and usage;
+2) ORF usage;
+3) differential ORF usage in different organs.
 
 
 ## Installation
