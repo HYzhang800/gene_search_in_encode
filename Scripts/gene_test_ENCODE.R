@@ -55,7 +55,7 @@ wkdir <- args[8]
 
 cat("Input argument 1 is a ", class(filtered_gtf))
 
-
+stage <- 'read input files'
 # filtered_gtf <- "C:/Users/Haoyu/Desktop/snake_test/Results/filtered_gtf_list.txt"
 # gene_info <- "C:/Users/Haoyu/Desktop/snake_test/Results/gencode_genes.csv"
 # metadata_dir <- "E:/Encode_tsv/Metadata/lung.tsv"
@@ -87,6 +87,8 @@ quanti_tissue <- metadata_tsv %>%
 
 
 # read gene to be processed
+
+
 genes_in_gencode <- read.csv(gene_info, header = T)
 
 gene_of_interest <- unique(genes_in_gencode$gene_name)
@@ -143,6 +145,87 @@ export(gtf_transcripts, "Results/encode_annotation_transcripts.gtf", format = "g
 
 gtf_transcripts <- import("Results/encode_annotation_transcripts.gtf")
 
+## ---- snakemake/HPC: per-gene tryCatch + debug capture (ADD) ----
+dir.create("Results", showWarnings = FALSE, recursive = TRUE)
+dir.create("Results/Rlog", showWarnings = FALSE, recursive = TRUE)
+dir.create("Results/debug_failed_genes", showWarnings = FALSE, recursive = TRUE)
+
+.failed_rows <- list()
+
+.log_msg <- function(...) {
+  msg <- paste0(format(Sys.time(), "%F %T"), " | ", paste(..., collapse = ""))
+  message(msg)
+  cat(msg, "\n", file = "Results/Rlog/per_gene_status.log", append = TRUE)
+}
+
+.safe_saveRDS <- function(obj, filepath) {
+  try(saveRDS(obj, filepath), silent = TRUE)
+}
+
+.record_failure <- function(gene, stage, err_msg) {
+  .failed_rows[[length(.failed_rows) + 1]] <<- data.frame(
+    gene = gene,
+    stage = stage,
+    error_message = err_msg,
+    time = format(Sys.time(), "%F %T"),
+    stringsAsFactors = FALSE
+  )
+}
+
+.write_placeholder_outputs <- function(gene, stage, err_msg) {
+  # Your Snakemake expects Results/transcript_usage_<gene>.csv to exist
+  out_csv <- paste0("Results/transcript_usage_", gene, ".csv")
+  if (!file.exists(out_csv)) {
+    write.csv(
+      data.frame(
+        gene = gene,
+        status = "FAILED",
+        stage = stage,
+        error_message = err_msg,
+        stringsAsFactors = FALSE
+      ),
+      out_csv,
+      row.names = FALSE
+    )
+  }
+}
+
+.save_debug_bundle <- function(gene, stage, err_msg) {
+  dbg_dir <- file.path("Results", "debug_failed_genes", gene)
+  dir.create(dbg_dir, showWarnings = FALSE, recursive = TRUE)
+
+  # Always save a meta file
+  meta <- list(
+    gene = gene,
+    stage = stage,
+    error_message = err_msg,
+    time = format(Sys.time(), "%F %T"),
+    sessionInfo = capture.output(sessionInfo())
+  )
+  .safe_saveRDS(meta, file.path(dbg_dir, "meta.rds"))
+
+  # Save key objects IF they exist (best-effort, won’t crash)
+  if (exists("processing_gene_info", inherits = FALSE)) .safe_saveRDS(processing_gene_info, file.path(dbg_dir, "processing_gene_info.rds"))
+  if (exists("gene_region", inherits = FALSE))         .safe_saveRDS(gene_region, file.path(dbg_dir, "gene_region.rds"))
+  if (exists("overlapping_trans", inherits = FALSE))   .safe_saveRDS(overlapping_trans, file.path(dbg_dir, "overlapping_trans.rds"))
+  if (exists("gtf_tibble", inherits = FALSE))          .safe_saveRDS(gtf_tibble, file.path(dbg_dir, "gtf_tibble.rds"))
+
+  # This is the most important for your predictNMD crash:
+  if (exists("my_id_whole_gtf", inherits = FALSE))     .safe_saveRDS(my_id_whole_gtf, file.path(dbg_dir, "my_id_whole_gtf.rds"))
+  if (exists("my_id_grange", inherits = FALSE))        .safe_saveRDS(my_id_grange, file.path(dbg_dir, "my_id_grange.rds"))
+
+  # If you already exported the per-gene gtf (you do just before predictNMD), copy that path into meta:
+  gtf_path <- paste0("Results/my_id_whold_gtf_", gene, ".gtf")
+  if (file.exists(gtf_path)) {
+    # Keep a copy under debug dir as well (so you don’t lose it if Results gets cleaned)
+    file.copy(gtf_path, file.path(dbg_dir, paste0("my_id_whold_gtf_", gene, ".gtf")), overwrite = TRUE)
+  }
+
+  # Traceback log (useful on HPC)
+  tb <- paste(capture.output(traceback(2)), collapse = "\n")
+  cat(tb, "\n", file = file.path("Results/Rlog", paste0("traceback_", gene, ".log")), append = FALSE)
+}
+
 
 for (g in 1:length(gene_of_interest)) {
   
@@ -150,6 +233,10 @@ processing_gene <- gene_of_interest[g]
 
 cat("Processing gene", processing_gene)
 
+ stage <- "init"
+  .log_msg("START ", processing_gene)
+
+tryCatch({ 
 processing_gene_info <- genes_in_gencode %>% filter(gene_name == processing_gene)
 
 gene_name <- processing_gene
@@ -169,7 +256,7 @@ gene_region <- GRanges(
 
 ## If target gene is an overlapping locus (with another gene), only reads fully contained in the locus will be kept
 ## Otherwise, all reads with at least 50 bps overlapping will be kept
-
+stage <- 'check overlapping'
 if(is.na(processing_gene_info$tag)){
   overlapping_trans <- subsetByOverlaps(gtf_transcripts, gene_region, minoverlap = 50) 
 
@@ -190,6 +277,7 @@ if(length(overlapping_trans) == 0){
 
   
 # keep unique 'exons'
+stage <- 'keep unique exons'
 gtf <- gtf_for_all_genes %>% filter(type == "exon") %>%
   filter(transcript_id %in% overlapping_trans) %>%
   unique()
@@ -226,12 +314,14 @@ gtf_tibble <- gtf_tibble %>% group_by(transcript_id) %>% mutate(exon_number = ro
 # Create GRangesList from gtf_tibble
 grl <- makeGRangesListFromDataFrame(gtf_tibble, split.field = "transcript_id", names.field = "transcript_id")
 
+stage <- 'get transcript/ORF sequences'
 # Extract transcript sequences
 seqs <- extractTranscriptSeqs(ref, grl)
 #writeXStringSet(seqs, "/mnt/e/Encode_tsv/all/transcript_seq.fa")
 
 
 # Convert the sequences to a data frame
+
 gene_seq <- data.frame(
   annot_transcript_id = names(seqs),
   transcript_sequence = paste(seqs)
@@ -301,6 +391,7 @@ f <- list()
 
 
 #select previously identified transcripts and calculate their usage
+stage <- 'calculate TPM'
 for (i in 1:length(quantification)) {
   f[[i]] <- read.table(quantification_path[i], sep = '\t', header = TRUE)
   f[[i]] <- f[[i]] %>% filter(annot_transcript_id %in% talon_id) %>%
@@ -540,7 +631,7 @@ quanti_cds$transcript_novelty <- encode_lr$transcript_novelty[match(quanti_cds$a
 
 
 ##UTRs novelty check
-
+stage <- 'UTR novelty check'
 txdb_known <- makeTxDbFromGFF(paste("Results/gencode_gene_",processing_gene,".gtf", sep = ""), format="gtf") #this will take some time
 five_known <- fiveUTRsByTranscript(txdb_known, use.names = T)
 three_known <- threeUTRsByTranscript(txdb_known, use.names = T)
@@ -559,7 +650,7 @@ export(whole_gtf, paste("Results/gene_encode_",processing_gene,".gtf", sep = "")
 txdb <- makeTxDbFromGFF(paste("Results/gene_encode_",processing_gene,".gtf", sep = ""), format = "gtf")
 ####
 
-
+stage <- 'check UTR novelty'
 five_txdb_encode <- fiveUTRsByTranscript(txdb, use.names = T)
 three_txdb_encode <- threeUTRsByTranscript(txdb, use.names = T)
 
@@ -671,7 +762,7 @@ five_novelty <- five %>% dplyr::select(group_name,five_novelty) %>% unique()
 three_novelty <- three %>% dplyr::select(group_name,three_novelty) %>% unique()
 
 ##transcript merging
-
+stage <- 'transcript merging'
 
 five_UTR <- as_tibble(five_txdb_encode)
 three_UTR <- as_tibble(three_txdb_encode)
@@ -1077,6 +1168,7 @@ trans_merged_filtered$transcript_novelty <- merged_transcript_novelty$merged_nov
 
 
 ##get transcript level quantification
+stage <- 'get transcript level quantification'
 
 # Replace 0 with NA
 transcript_info <- trans_merged_quanti
@@ -1196,7 +1288,7 @@ my_id_filtered <- my_id_whole_gtf %>% filter(transcript_id %in% trans_merged_fil
 
 
 ##NMD prediction
-
+stage <- 'NMD prediction'
 export(my_id_whole_gtf, paste("Results/my_id_whold_gtf_",processing_gene,".gtf", sep = ""), format = "gtf")
 my_id_grange <- import(paste("Results/my_id_whold_gtf_",processing_gene,".gtf", sep = ""))
 
@@ -1207,7 +1299,7 @@ nmd_info <- predictNMD(my_id_grange)
 nmd_info <- as.data.frame(nmd_info)
 
 ##ORF usage
-
+stage <- 'get ORF usage'
 trans_merged_filtered <- trans_merged_filtered %>% ungroup()
 trans_merged_filtered$orf_id <- info$orf_id[match(trans_merged_filtered$new_id, info$new_id)]
 
@@ -1295,6 +1387,7 @@ orf_prop_sum$novelty <- ifelse(orf_prop_sum$orf_id %in% novel_orf$orf_id, "Novel
 
 
 #transcript class determination
+stage <- 'transcript class determination'                               
 
 info$five_novelty <- five_novelty$five_novelty[match(info$five_id, five_novelty$five_id)]
 info$three_novelty <- three_novelty$three_novelty[match(info$three_id, three_novelty$three_id)]
@@ -1372,7 +1465,7 @@ info$transcript_class <- novelty$transcript_class[match(info$new_id, novelty$new
 #####################
 #make output files
 
-
+stage <- 'make output files'
 
 cat("Start generating output files.")
 
@@ -1717,9 +1810,12 @@ fig2_top <- cowplot::plot_grid(occurrence_top +
 
 
 #########output files
+
+                              
 #change gene specific name for output files
 #change output file names in the snakemake rule, or no output
-
+stage <- 'generating output files'
+                                  
 ggsave(paste("Results/top_transcripts_sum_", gene_name, ".png", sep = ""), plot = fig2_top ,width = 30, height = 12)
 ggsave(paste("Results/dou_", gene_name, ".png", sep = ""), plot = dou_plot ,width = 7, height = 4.5)
 ggsave(paste("Results/orf_usage_",gene_name, ".png", sep = ""), plot = orf_usage_full ,width = 10, height = 20)
@@ -1730,4 +1826,35 @@ write.csv(info, file = paste("Results/transcript_summary_",gene_name,".csv", sep
 write.csv(sample_info, file = paste("Results/gene_quanti_",gene_name,".csv", sep = ""), row.names = F)
 write.csv(orf_prop_sum, file = paste("Results/orf_usage_sum", gene_name, ".csv", sep = ""), row.names = F)
 
+                                  
+                                  .log_msg("DONE  ", processing_gene)
+
+  }, error = function(e) {
+
+    err_msg <- conditionMessage(e)
+    .log_msg("FAIL  ", processing_gene, " | stage=", stage, " | ", err_msg)
+
+    .record_failure(processing_gene, stage, err_msg)
+    .save_debug_bundle(processing_gene, stage, err_msg)
+    .write_placeholder_outputs(processing_gene, stage, err_msg)
+
+    # continue to next gene
+    NULL
+  })
 }
+
+
+## ---- write failed gene summary (ADD) ----
+failed_df <- if (length(.failed_rows) == 0) {
+  data.frame(gene=character(), stage=character(), error_message=character(), time=character(),
+             stringsAsFactors = FALSE)
+} else {
+  do.call(rbind, .failed_rows)
+}
+
+write.table(failed_df, file = "Results/failed_genes.tsv",
+            sep = "\t", quote = FALSE, row.names = FALSE)
+
+writeLines(failed_df$gene, con = "Results/failed_genes.txt")
+
+.log_msg("FAILED_GENES_COUNT ", nrow(failed_df))                                  
