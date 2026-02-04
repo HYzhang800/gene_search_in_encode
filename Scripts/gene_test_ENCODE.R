@@ -1289,9 +1289,21 @@ my_id_filtered <- my_id_whole_gtf %>% filter(transcript_id %in% trans_merged_fil
 
 ##NMD prediction
 stage <- 'NMD prediction'
+
+                                  
 export(my_id_whole_gtf, paste("Results/my_id_whold_gtf_",processing_gene,".gtf", sep = ""), format = "gtf")
 my_id_grange <- import(paste("Results/my_id_whold_gtf_",processing_gene,".gtf", sep = ""))
 
+bad <- my_id_grange[end(my_id_grange) < start(my_id_grange)]
+if (length(bad) > 0) {
+  # save bad ranges for debugging
+  dbg_dir <- file.path("Results", "debug_failed_genes", processing_gene)
+  dir.create(dbg_dir, showWarnings = FALSE, recursive = TRUE)
+  saveRDS(bad, file.path(dbg_dir, "bad_ranges_granges.rds"))
+  stop("Invalid ranges detected before predictNMD (end < start).")
+}
+
+                                  
 nmd_info <- predictNMD(my_id_grange)
 
 
@@ -1837,7 +1849,10 @@ write.csv(orf_prop_sum, file = paste("Results/orf_usage_sum", gene_name, ".csv",
     .record_failure(processing_gene, stage, err_msg)
     .save_debug_bundle(processing_gene, stage, err_msg)
     .write_placeholder_outputs(processing_gene, stage, err_msg)
-
+if (grepl("each range must have an end", err_msg, fixed = TRUE) && exists("my_id_whole_gtf", inherits = FALSE)) {
+  bad <- my_id_whole_gtf %>% dplyr::filter(is.na(start) | is.na(end) | start > end)
+  try(saveRDS(bad, file.path("Results/debug_failed_genes", processing_gene, "bad_ranges.rds")), silent = TRUE)
+}
     # continue to next gene
     NULL
   })
@@ -1858,3 +1873,4 @@ write.table(failed_df, file = "Results/failed_genes.tsv",
 writeLines(failed_df$gene, con = "Results/failed_genes.txt")
 
 .log_msg("FAILED_GENES_COUNT ", nrow(failed_df))                                  
+
